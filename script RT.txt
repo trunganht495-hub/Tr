@@ -1,0 +1,157 @@
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+if CoreGui:FindFirstChild("RTS_Script_GUI") then
+	CoreGui.RTS_Script_GUI:Destroy()
+end
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "RTS_Script_GUI"
+ScreenGui.Parent = CoreGui
+ScreenGui.ResetOnSpawn = false
+
+local MainMenu = Instance.new("Frame")
+MainMenu.Name = "MainMenu"
+MainMenu.Parent = ScreenGui
+MainMenu.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MainMenu.BorderSizePixel = 0
+MainMenu.Position = UDim2.new(0.5, -100, 0.4, -60)
+MainMenu.Size = UDim2.new(0, 200, 0, 120)
+MainMenu.Active = true
+MainMenu.Draggable = true
+
+local Title = Instance.new("TextLabel")
+Title.Name = "Title"
+Title.Parent = MainMenu
+Title.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+Title.BorderSizePixel = 0
+Title.Size = UDim2.new(1, 0, 0, 35)
+Title.Font = Enum.Font.SourceSansBold
+Title.Text = "-- script ɹͲ --"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 16
+
+local Menu1Button = Instance.new("TextButton")
+Menu1Button.Name = "Menu1Button"
+Menu1Button.Parent = MainMenu
+Menu1Button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+Menu1Button.BorderSizePixel = 0
+Menu1Button.Position = UDim2.new(0.1, 0, 0.45, 0)
+Menu1Button.Size = UDim2.new(0.8, 0, 0, 45)
+Menu1Button.Font = Enum.Font.SourceSansBold
+Menu1Button.Text = "Menu 1\n- tốc độ"
+Menu1Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+Menu1Button.TextSize = 14
+
+local SpeedGui = Instance.new("Frame")
+SpeedGui.Name = "SpeedGui"
+SpeedGui.Parent = ScreenGui
+SpeedGui.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+SpeedGui.BorderSizePixel = 0
+SpeedGui.Position = UDim2.new(0.5, 110, 0.4, -60)
+SpeedGui.Size = UDim2.new(0, 220, 0, 160)
+SpeedGui.Active = true
+SpeedGui.Draggable = true
+SpeedGui.Visible = false
+
+local SpeedTitle = Instance.new("TextLabel")
+SpeedTitle.Name = "SpeedTitle"
+SpeedTitle.Parent = SpeedGui
+SpeedTitle.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+SpeedTitle.BorderSizePixel = 0
+SpeedTitle.Size = UDim2.new(1, 0, 0, 35)
+SpeedTitle.Font = Enum.Font.SourceSansBold
+SpeedTitle.Text = "Cài Đặt Tốc Độ"
+SpeedTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+SpeedTitle.TextSize = 16
+
+local speedEnabled = false
+local currentSpeed = 16
+
+local DecButton = Instance.new("TextButton")
+DecButton.Name = "DecButton"
+DecButton.Parent = SpeedGui
+DecButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+DecButton.BorderSizePixel = 0
+DecButton.Position = UDim2.new(0.1, 0, 0.35, 0)
+DecButton.Size = UDim2.new(0, 40, 0, 35)
+DecButton.Font = Enum.Font.SourceSansBold
+DecButton.Text = "<"
+DecButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+DecButton.TextSize = 18
+
+local SpeedLabel = Instance.new("TextLabel")
+SpeedLabel.Name = "SpeedLabel"
+SpeedLabel.Parent = SpeedGui
+SpeedLabel.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+SpeedLabel.BorderSizePixel = 0
+SpeedLabel.Position = UDim2.new(0.3, 0, 0.35, 0)
+SpeedLabel.Size = UDim2.new(0, 80, 0, 35)
+SpeedLabel.Font = Enum.Font.SourceSansBold
+SpeedLabel.Text = tostring(currentSpeed)
+SpeedLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+SpeedLabel.TextSize = 16
+
+local IncButton = Instance.new("TextButton")
+IncButton.Name = "IncButton"
+IncButton.Parent = SpeedGui
+IncButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+IncButton.BorderSizePixel = 0
+IncButton.Position = UDim2.new(0.7, 0, 0.35, 0)
+IncButton.Size = UDim2.new(0, 40, 0, 35)
+IncButton.Font = Enum.Font.SourceSansBold
+IncButton.Text = ">"
+IncButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+IncButton.TextSize = 18
+
+local PowerButton = Instance.new("TextButton")
+PowerButton.Name = "PowerButton"
+PowerButton.Parent = SpeedGui
+PowerButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+PowerButton.BorderSizePixel = 0
+PowerButton.Position = UDim2.new(0.1, 0, 0.7, 0)
+PowerButton.Size = UDim2.new(0.8, 0, 0, 35)
+PowerButton.Font = Enum.Font.SourceSansBold
+PowerButton.Text = "Bật / Tắt: TẮT"
+PowerButton.TextColor3 = Color3.fromRGB(255, 50, 50)
+PowerButton.TextSize = 14
+
+Menu1Button.MouseButton1Click:Connect(function()
+	SpeedGui.Visible = not SpeedGui.Visible
+end)
+
+RunService.Heartbeat:Connect(function()
+	if speedEnabled then
+		local character = LocalPlayer.Character
+		if character and character:FindFirstChild("Humanoid") then
+			character.Humanoid.WalkSpeed = currentSpeed
+		end
+	end
+end)
+
+PowerButton.MouseButton1Click:Connect(function()
+	speedEnabled = not speedEnabled
+	if speedEnabled then
+		PowerButton.Text = "Bật / Tắt: BẬT"
+		PowerButton.TextColor3 = Color3.fromRGB(50, 255, 50)
+	else
+		PowerButton.Text = "Bật / Tắt: TẮT"
+		PowerButton.TextColor3 = Color3.fromRGB(255, 50, 50)
+		local character = LocalPlayer.Character
+		if character and character:FindFirstChild("Humanoid") then
+			character.Humanoid.WalkSpeed = 16
+		end
+	end
+end)
+
+DecButton.MouseButton1Click:Connect(function()
+	currentSpeed = currentSpeed - 2
+	SpeedLabel.Text = tostring(currentSpeed)
+end)
+
+IncButton.MouseButton1Click:Connect(function()
+	currentSpeed = currentSpeed + 2
+	SpeedLabel.Text = tostring(currentSpeed)
+end)
