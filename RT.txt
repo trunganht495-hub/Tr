@@ -18,8 +18,8 @@ MainMenu.Name = "MainMenu"
 MainMenu.Parent = ScreenGui
 MainMenu.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 MainMenu.BorderSizePixel = 0
-MainMenu.Position = UDim2.new(0.5, -100, 0.4, -110)
-MainMenu.Size = UDim2.new(0, 200, 0, 220)
+MainMenu.Position = UDim2.new(0.5, -100, 0.4, -90)
+MainMenu.Size = UDim2.new(0, 200, 0, 180)
 MainMenu.Active = true
 MainMenu.Draggable = true
 
@@ -39,8 +39,8 @@ Menu1Button.Name = "Menu1Button"
 Menu1Button.Parent = MainMenu
 Menu1Button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 Menu1Button.BorderSizePixel = 0
-Menu1Button.Position = UDim2.new(0.1, 0, 0.22, 0)
-Menu1Button.Size = UDim2.new(0.8, 0, 0, 35)
+Menu1Button.Position = UDim2.new(0.1, 0, 0.25, 0)
+Menu1Button.Size = UDim2.new(0.8, 0, 0, 40)
 Menu1Button.Font = Enum.Font.SourceSansBold
 Menu1Button.Text = "Menu 1\n- tốc độ"
 Menu1Button.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -51,31 +51,19 @@ Menu2Button.Name = "Menu2Button"
 Menu2Button.Parent = MainMenu
 Menu2Button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 Menu2Button.BorderSizePixel = 0
-Menu2Button.Position = UDim2.new(0.1, 0, 0.5, 0)
-Menu2Button.Size = UDim2.new(0.8, 0, 0, 35)
+Menu2Button.Position = UDim2.new(0.1, 0, 0.6, 0)
+Menu2Button.Size = UDim2.new(0.8, 0, 0, 45)
 Menu2Button.Font = Enum.Font.SourceSansBold
 Menu2Button.Text = "Nhìn tối: TẮT"
 Menu2Button.TextColor3 = Color3.fromRGB(255, 50, 50)
 Menu2Button.TextSize = 14
-
-local Menu3Button = Instance.new("TextButton")
-Menu3Button.Name = "Menu3Button"
-Menu3Button.Parent = MainMenu
-Menu3Button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-Menu3Button.BorderSizePixel = 0
-Menu3Button.Position = UDim2.new(0.1, 0, 0.75, 0)
-Menu3Button.Size = UDim2.new(0.8, 0, 0, 35)
-Menu3Button.Font = Enum.Font.SourceSansBold
-Menu3Button.Text = "Menu 3\n- tàng hình"
-Menu3Button.TextColor3 = Color3.fromRGB(255, 255, 255)
-Menu3Button.TextSize = 14
 
 local SpeedGui = Instance.new("Frame")
 SpeedGui.Name = "SpeedGui"
 SpeedGui.Parent = ScreenGui
 SpeedGui.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 SpeedGui.BorderSizePixel = 0
-SpeedGui.Position = UDim2.new(0.5, 110, 0.4, -110)
+SpeedGui.Position = UDim2.new(0.5, 110, 0.4, -90)
 SpeedGui.Size = UDim2.new(0, 220, 0, 160)
 SpeedGui.Active = true
 SpeedGui.Draggable = true
@@ -92,33 +80,9 @@ SpeedTitle.Text = "Cài Đặt Tốc Độ"
 SpeedTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 SpeedTitle.TextSize = 16
 
-local InvisGui = Instance.new("Frame")
-InvisGui.Name = "InvisGui"
-InvisGui.Parent = ScreenGui
-InvisGui.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-InvisGui.BorderSizePixel = 0
-InvisGui.Position = UDim2.new(0.5, 110, 0.4, 60)
-InvisGui.Size = UDim2.new(0, 220, 0, 100)
-InvisGui.Active = true
-InvisGui.Draggable = true
-InvisGui.Visible = false
-
-local InvisTitle = Instance.new("TextLabel")
-InvisTitle.Name = "InvisTitle"
-InvisTitle.Parent = InvisGui
-InvisTitle.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-InvisTitle.BorderSizePixel = 0
-InvisTitle.Size = UDim2.new(1, 0, 0, 35)
-InvisTitle.Font = Enum.Font.SourceSansBold
-InvisTitle.Text = "Tàng Hình"
-InvisTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-InvisTitle.TextSize = 16
-
 local speedEnabled = false
 local currentSpeed = 16
 local fullBrightEnabled = false
-local invisEnabled = false
-
 local originalBrightness = Lighting.Brightness
 local originalClockTime = Lighting.ClockTime
 local originalGlobalShadows = Lighting.GlobalShadows
@@ -172,18 +136,6 @@ PowerButton.Text = "Bật / Tắt: TẮT"
 PowerButton.TextColor3 = Color3.fromRGB(255, 50, 50)
 PowerButton.TextSize = 14
 
-local InvisToggleButton = Instance.new("TextButton")
-InvisToggleButton.Name = "InvisToggleButton"
-InvisToggleButton.Parent = InvisGui
-InvisToggleButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-InvisToggleButton.BorderSizePixel = 0
-InvisToggleButton.Position = UDim2.new(0.1, 0, 0.5, 0)
-InvisToggleButton.Size = UDim2.new(0.8, 0, 0, 35)
-InvisToggleButton.Font = Enum.Font.SourceSansBold
-InvisToggleButton.Text = "Tàng hình: TẮT"
-InvisToggleButton.TextColor3 = Color3.fromRGB(255, 50, 50)
-InvisToggleButton.TextSize = 14
-
 Menu1Button.MouseButton1Click:Connect(function()
 	SpeedGui.Visible = not SpeedGui.Visible
 end)
@@ -212,10 +164,6 @@ Menu2Button.MouseButton1Click:Connect(function()
 	end
 end)
 
-Menu3Button.MouseButton1Click:Connect(function()
-	InvisGui.Visible = not InvisGui.Visible
-end)
-
 RunService.Heartbeat:Connect(function()
 	if speedEnabled then
 		local character = LocalPlayer.Character
@@ -242,38 +190,6 @@ PowerButton.MouseButton1Click:Connect(function()
 		local character = LocalPlayer.Character
 		if character and character:FindFirstChild("Humanoid") then
 			character.Humanoid.WalkSpeed = 16
-		end
-	end
-end)
-
-InvisToggleButton.MouseButton1Click:Connect(function()
-	invisEnabled = not invisEnabled
-	local character = LocalPlayer.Character
-	if character then
-		if invisEnabled then
-			InvisToggleButton.Text = "Tàng hình: BẬT"
-			InvisToggleButton.TextColor3 = Color3.fromRGB(50, 255, 50)
-			for _, part in ipairs(character:GetDescendants()) do
-				if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-					part.Transparency = 1
-				elseif part:IsA("Decal") or part:IsA("Texture") then
-					part.Transparency = 1
-				end
-			end
-		else
-			InvisToggleButton.Text = "Tàng hình: TẮT"
-			InvisToggleButton.TextColor3 = Color3.fromRGB(255, 50, 50)
-			for _, part in ipairs(character:GetDescendants()) do
-				if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-					if part.Name == "Head" then
-						part.Transparency = 0
-					else
-						part.Transparency = 0
-					end
-				elseif part:IsA("Decal") or part:IsA("Texture") then
-					part.Transparency = 0
-				end
-			end
 		end
 	end
 end)
