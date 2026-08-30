@@ -1,0 +1,836 @@
+-- // TREDHU //
+-- // FUNCTION MENU + LIGHTNING ALARM + GOLDsrc STYLE ANTI LAG //
+-- // UI dựa trên ui menu.txt của TREDHU //
+
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local SoundService = game:GetService("SoundService")
+local Lighting = game:GetService("Lighting")
+local UserInputService = game:GetService("UserInputService")
+
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+-- =========================================================
+-- SETTINGS
+-- =========================================================
+
+local LightningEnabled = false
+local AntiLagEnabled = false
+
+local LastAlert = 0
+local Cooldown = 2
+local CountdownRunning = false
+local WarningToken = 0
+
+local SavedEffects = {}
+local SavedLighting = {}
+
+local BlurEffect = nil
+
+-- =========================================================
+-- OLD GUI CLEANUP
+-- =========================================================
+
+for _, Name in ipairs({
+    "PiFunctionUI",
+    "tredhuIndicator"
+}) do
+    local Old = PlayerGui:FindFirstChild(Name)
+
+    if Old then
+        Old:Destroy()
+    end
+end
+
+-- =========================================================
+-- MAIN GUI
+-- =========================================================
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "PiFunctionUI"
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+gui.Parent = PlayerGui
+
+-- =========================================================
+-- MAIN
+-- =========================================================
+
+local main = Instance.new("Frame")
+main.Name = "Main"
+main.Size = UDim2.fromOffset(330, 400)
+main.Position = UDim2.new(0.5, -165, 0.5, -200)
+main.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+main.BorderSizePixel = 0
+main.Parent = gui
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 14)
+mainCorner.Parent = main
+
+local stroke = Instance.new("UIStroke")
+stroke.Thickness = 1.5
+stroke.Color = Color3.fromRGB(70, 70, 85)
+stroke.Transparency = 0.15
+stroke.Parent = main
+
+-- =========================================================
+-- TOP BAR
+-- =========================================================
+
+local topBar = Instance.new("Frame")
+topBar.Name = "TopBar"
+topBar.Size = UDim2.new(1, 0, 0, 55)
+topBar.BackgroundTransparency = 1
+topBar.Parent = main
+
+local title = Instance.new("TextLabel")
+title.Name = "Title"
+title.Size = UDim2.new(1, -65, 1, 0)
+title.Position = UDim2.fromOffset(18, 0)
+title.BackgroundTransparency = 1
+title.Text = "TREDHU"
+title.TextColor3 = Color3.fromRGB(245, 245, 250)
+title.TextSize = 18
+title.Font = Enum.Font.Arcade
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = topBar
+
+-- =========================================================
+-- COLLAPSE BUTTON
+-- =========================================================
+
+local collapse = Instance.new("TextButton")
+collapse.Name = "Collapse"
+collapse.Size = UDim2.fromOffset(40, 40)
+collapse.Position = UDim2.new(1, -48, 0, 7)
+collapse.BackgroundColor3 = Color3.fromRGB(35, 35, 43)
+collapse.Text = "−"
+collapse.TextColor3 = Color3.fromRGB(235, 235, 240)
+collapse.TextSize = 22
+collapse.Font = Enum.Font.Arcade
+collapse.AutoButtonColor = false
+collapse.Parent = topBar
+
+local collapseCorner = Instance.new("UICorner")
+collapseCorner.CornerRadius = UDim.new(0, 10)
+collapseCorner.Parent = collapse
+
+-- =========================================================
+-- FUNCTION LIST
+-- =========================================================
+
+local list = Instance.new("ScrollingFrame")
+list.Name = "FunctionList"
+list.Size = UDim2.new(1, -24, 1, -75)
+list.Position = UDim2.fromOffset(12, 65)
+list.BackgroundTransparency = 1
+list.BorderSizePixel = 0
+list.ScrollBarThickness = 4
+list.ScrollBarImageTransparency = 0.25
+list.CanvasSize = UDim2.new(0, 0, 0, 0)
+list.AutomaticCanvasSize = Enum.AutomaticSize.Y
+list.ScrollingDirection = Enum.ScrollingDirection.Y
+list.Parent = main
+
+local layout = Instance.new("UIListLayout")
+layout.Padding = UDim.new(0, 8)
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+layout.Parent = list
+
+local padding = Instance.new("UIPadding")
+padding.PaddingTop = UDim.new(0, 3)
+padding.PaddingBottom = UDim.new(0, 8)
+padding.Parent = list
+
+-- =========================================================
+-- FUNCTION SYSTEM
+-- =========================================================
+
+local functions = {}
+
+local function createFunction(name, callback)
+
+    local button = Instance.new("TextButton")
+
+    button.Name = name
+    button.Size = UDim2.new(1, -4, 0, 48)
+    button.BackgroundColor3 = Color3.fromRGB(29, 29, 36)
+    button.BorderSizePixel = 0
+    button.Text = name
+    button.TextColor3 = Color3.fromRGB(230, 230, 235)
+    button.TextSize = 15
+    button.Font = Enum.Font.Arcade
+    button.TextXAlignment = Enum.TextXAlignment.Left
+    button.AutoButtonColor = false
+    button.Parent = list
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 10)
+    corner.Parent = button
+
+    local buttonPadding = Instance.new("UIPadding")
+    buttonPadding.PaddingLeft = UDim.new(0, 15)
+    buttonPadding.Parent = button
+
+    local line = Instance.new("Frame")
+    line.Name = "Indicator"
+    line.Size = UDim2.fromOffset(3, 24)
+    line.Position = UDim2.new(1, -8, 0.5, -12)
+    line.BackgroundColor3 = Color3.fromRGB(130, 130, 150)
+    line.BorderSizePixel = 0
+    line.Parent = button
+
+    local lineCorner = Instance.new("UICorner")
+    lineCorner.CornerRadius = UDim.new(1, 0)
+    lineCorner.Parent = line
+
+    button.MouseEnter:Connect(function()
+        button.BackgroundColor3 =
+            Color3.fromRGB(40, 40, 50)
+    end)
+
+    button.MouseLeave:Connect(function()
+        button.BackgroundColor3 =
+            Color3.fromRGB(29, 29, 36)
+    end)
+
+    button.MouseButton1Click:Connect(function()
+
+        if typeof(callback) == "function" then
+            callback(button, line)
+        end
+
+    end)
+
+    return button
+end
+
+function AddFunction(name, callback)
+
+    if not name then
+        return
+    end
+
+    if functions[name] then
+        functions[name]:Destroy()
+        functions[name] = nil
+    end
+
+    functions[name] =
+        createFunction(name, callback)
+end
+
+function RemoveFunction(name)
+
+    if functions[name] then
+        functions[name]:Destroy()
+        functions[name] = nil
+    end
+end
+
+function ClearFunctions()
+
+    for name, object in pairs(functions) do
+
+        if object then
+            object:Destroy()
+        end
+
+        functions[name] = nil
+    end
+end
+
+-- =========================================================
+-- DRAG MAIN MENU — MOBILE + PC
+-- =========================================================
+
+local dragging = false
+local dragStart
+local startPosition
+
+topBar.InputBegan:Connect(function(input)
+
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+
+        dragging = true
+        dragStart = input.Position
+        startPosition = main.Position
+
+        input.Changed:Connect(function()
+
+            if input.UserInputState ==
+                Enum.UserInputState.End then
+
+                dragging = false
+            end
+        end)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+
+    if not dragging then
+        return
+    end
+
+    if input.UserInputType ~= Enum.UserInputType.MouseMovement
+        and input.UserInputType ~= Enum.UserInputType.Touch then
+
+        return
+    end
+
+    local delta =
+        input.Position - dragStart
+
+    main.Position = UDim2.new(
+        startPosition.X.Scale,
+        startPosition.X.Offset + delta.X,
+
+        startPosition.Y.Scale,
+        startPosition.Y.Offset + delta.Y
+    )
+end)
+
+-- =========================================================
+-- PI BUTTON
+-- =========================================================
+
+local piButton = Instance.new("TextButton")
+
+piButton.Name = "PiButton"
+piButton.Size = UDim2.fromOffset(52, 52)
+piButton.Position = main.Position
+piButton.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+piButton.BorderSizePixel = 0
+piButton.Text = "π"
+piButton.TextColor3 = Color3.fromRGB(245, 245, 250)
+piButton.TextSize = 25
+piButton.Font = Enum.Font.Arcade
+piButton.Visible = false
+piButton.AutoButtonColor = false
+piButton.Parent = gui
+
+local piCorner = Instance.new("UICorner")
+piCorner.CornerRadius = UDim.new(0, 14)
+piCorner.Parent = piButton
+
+local piStroke = Instance.new("UIStroke")
+piStroke.Thickness = 1.5
+piStroke.Color = Color3.fromRGB(70, 70, 85)
+piStroke.Parent = piButton
+
+-- =========================================================
+-- COLLAPSE / OPEN
+-- =========================================================
+
+collapse.MouseButton1Click:Connect(function()
+
+    piButton.Position = main.Position
+
+    main.Visible = false
+    piButton.Visible = true
+end)
+
+piButton.MouseButton1Click:Connect(function()
+
+    main.Position = piButton.Position
+
+    piButton.Visible = false
+    main.Visible = true
+end)
+
+-- =========================================================
+-- DRAG PI
+-- =========================================================
+
+local piDragging = false
+local piDragStart
+local piStartPosition
+
+piButton.InputBegan:Connect(function(input)
+
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+
+        piDragging = true
+        piDragStart = input.Position
+        piStartPosition = piButton.Position
+
+        input.Changed:Connect(function()
+
+            if input.UserInputState ==
+                Enum.UserInputState.End then
+
+                piDragging = false
+            end
+        end)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+
+    if not piDragging then
+        return
+    end
+
+    if input.UserInputType ~= Enum.UserInputType.MouseMovement
+        and input.UserInputType ~= Enum.UserInputType.Touch then
+
+        return
+    end
+
+    local delta =
+        input.Position - piDragStart
+
+    piButton.Position = UDim2.new(
+        piStartPosition.X.Scale,
+        piStartPosition.X.Offset + delta.X,
+
+        piStartPosition.Y.Scale,
+        piStartPosition.Y.Offset + delta.Y
+    )
+end)
+
+-- =========================================================
+-- LIGHTNING SOUND
+-- =========================================================
+
+local AlertSound = Instance.new("Sound")
+AlertSound.Name = "TredhuLightningAlert"
+AlertSound.SoundId = "rbxassetid://9118823101"
+AlertSound.Volume = 4
+AlertSound.Parent = SoundService
+
+-- =========================================================
+-- LIGHTNING INDICATOR
+-- =========================================================
+
+local IndicatorGui = Instance.new("ScreenGui")
+IndicatorGui.Name = "tredhuIndicator"
+IndicatorGui.ResetOnSpawn = false
+IndicatorGui.IgnoreGuiInset = true
+IndicatorGui.ZIndexBehavior =
+    Enum.ZIndexBehavior.Sibling
+IndicatorGui.Parent = PlayerGui
+
+local Indicator = Instance.new("Frame")
+
+Indicator.Name = "LightningIndicator"
+Indicator.Size = UDim2.fromOffset(1, 1)
+Indicator.Position = UDim2.new(1, -8, 1, -8)
+Indicator.BackgroundColor3 =
+    Color3.fromRGB(255, 210, 0)
+Indicator.BorderSizePixel = 0
+Indicator.Visible = false
+Indicator.Parent = IndicatorGui
+
+local Alert = Instance.new("TextLabel")
+
+Alert.Name = "LightningAlert"
+Alert.AnchorPoint = Vector2.new(1, 1)
+Alert.Position = UDim2.new(1, -12, 1, -18)
+Alert.Size = UDim2.fromOffset(170, 58)
+Alert.BackgroundColor3 =
+    Color3.fromRGB(20, 20, 25)
+Alert.BackgroundTransparency = 0.05
+Alert.BorderSizePixel = 0
+Alert.TextColor3 =
+    Color3.fromRGB(255, 255, 255)
+Alert.TextSize = 14
+Alert.Font = Enum.Font.Arcade
+Alert.TextWrapped = true
+Alert.Visible = false
+Alert.ZIndex = 100
+Alert.Parent = IndicatorGui
+
+local AlertCorner = Instance.new("UICorner")
+AlertCorner.CornerRadius =
+    UDim.new(0, 6)
+AlertCorner.Parent = Alert
+
+local AlertStroke = Instance.new("UIStroke")
+AlertStroke.Thickness = 1.5
+AlertStroke.Color =
+    Color3.fromRGB(120, 120, 130)
+AlertStroke.Parent = Alert
+
+-- =========================================================
+-- LIGHTNING WARNING
+-- =========================================================
+
+local function LightningWarning()
+
+    if not LightningEnabled then
+        return
+    end
+
+    if CountdownRunning then
+        return
+    end
+
+    local now = os.clock()
+
+    if now - LastAlert < Cooldown then
+        return
+    end
+
+    LastAlert = now
+    CountdownRunning = true
+
+    WarningToken += 1
+
+    local token =
+        WarningToken
+
+    Indicator.Visible = true
+    Alert.Visible = true
+
+    Indicator.BackgroundColor3 =
+        Color3.fromRGB(255, 210, 0)
+
+    AlertSound:Stop()
+    AlertSound:Play()
+
+    for i = 3, 1, -1 do
+
+        if not LightningEnabled
+            or token ~= WarningToken then
+
+            break
+        end
+
+        Alert.Text =
+            "⚡ SÉT SẮP ĐÁNH\nHÁI CÂY: " .. i
+
+        task.wait(1)
+    end
+
+    if LightningEnabled
+        and token == WarningToken then
+
+        Alert.Text =
+            "⚡ SÉT ĐÁNH!\n🌳 HÁI NGAY!"
+
+        Indicator.BackgroundColor3 =
+            Color3.fromRGB(255, 255, 255)
+
+        AlertSound:Stop()
+        AlertSound:Play()
+
+        task.wait(1.2)
+    end
+
+    if token == WarningToken then
+
+        Alert.Visible = false
+        Indicator.Visible = false
+
+        Indicator.BackgroundColor3 =
+            Color3.fromRGB(255, 210, 0)
+
+        CountdownRunning = false
+    end
+end
+
+-- =========================================================
+-- LIGHTNING DETECTOR
+-- LẤY CƠ CHẾ TỪ CODE RENO
+-- KHÔNG LẤY HỆ THỐNG NOTIFY CỦA RENO
+-- =========================================================
+
+local function IsLightningEffect(Object)
+
+    return Object:IsA("Highlight")
+        or Object:IsA("SelectionBox")
+        or Object:IsA("Beam")
+        or Object:IsA("ParticleEmitter")
+end
+
+Workspace.DescendantAdded:Connect(function(Object)
+
+    if LightningEnabled
+        and IsLightningEffect(Object) then
+
+        task.delay(0.05, function()
+
+            if LightningEnabled then
+                LightningWarning()
+            end
+        end)
+    end
+
+    -- Anti Lag xử lý effect mới
+    if AntiLagEnabled then
+
+        task.defer(function()
+
+            if not Object
+                or not Object.Parent then
+                return
+            end
+
+            if Object:IsA("ParticleEmitter") then
+
+                SavedEffects[Object] =
+                    SavedEffects[Object] or {}
+
+                if SavedEffects[Object].Enabled == nil then
+                    SavedEffects[Object].Enabled =
+                        Object.Enabled
+                end
+
+                Object.Enabled = false
+
+                if SavedEffects[Object].Rate == nil then
+                    SavedEffects[Object].Rate =
+                        Object.Rate
+                end
+
+                Object.Rate = 0
+
+            elseif Object:IsA("Trail")
+                or Object:IsA("Smoke")
+                or Object:IsA("Fire")
+                or Object:IsA("Sparkles")
+                or Object:IsA("PostEffect") then
+
+                SavedEffects[Object] =
+                    SavedEffects[Object] or {}
+
+                if SavedEffects[Object].Enabled == nil then
+                    SavedEffects[Object].Enabled =
+                        Object.Enabled
+                end
+
+                Object.Enabled = false
+            end
+        end)
+    end
+end)
+
+-- =========================================================
+-- SOUND DETECTION
+-- =========================================================
+
+local LightningKeywords = {
+    "lightning",
+    "thunder",
+    "strike",
+    "storm",
+    "electric",
+    "electricity",
+    "thunderbolt",
+    "thunderstorm",
+    "lightningbolt",
+    "bolt",
+    "zap"
+}
+
+local function IsLightningSound(Name)
+
+    Name = string.lower(Name)
+
+    for _, Keyword in ipairs(LightningKeywords) do
+
+        if string.find(
+            Name,
+            Keyword,
+            1,
+            true
+        ) then
+
+            return true
+        end
+    end
+
+    return false
+end
+
+local function MonitorSound(Object)
+
+    if not Object:IsA("Sound") then
+        return
+    end
+
+    if not IsLightningSound(Object.Name) then
+        return
+    end
+
+    Object.Played:Connect(function()
+
+        if LightningEnabled then
+            LightningWarning()
+        end
+    end)
+end
+
+for _, Object in ipairs(
+    Workspace:GetDescendants()
+) do
+
+    MonitorSound(Object)
+end
+
+Workspace.DescendantAdded:Connect(
+    MonitorSound
+)
+
+-- =========================================================
+-- ANTI LAG
+-- GOLDsrc STYLE
+-- CLIENT SIDE ONLY
+-- =========================================================
+
+local function EnableAntiLag()
+
+    -- Giảm shadow
+    if SavedLighting.GlobalShadows == nil then
+
+        SavedLighting.GlobalShadows =
+            Lighting.GlobalShadows
+    end
+
+    Lighting.GlobalShadows = false
+
+    -- Giảm lighting quality
+    pcall(function()
+
+        if SavedLighting.EnvironmentDiffuseScale == nil then
+            SavedLighting.EnvironmentDiffuseScale =
+                Lighting.EnvironmentDiffuseScale
+        end
+
+        Lighting.EnvironmentDiffuseScale = 0
+
+    end)
+
+    pcall(function()
+
+        if SavedLighting.EnvironmentSpecularScale == nil then
+            SavedLighting.EnvironmentSpecularScale =
+                Lighting.EnvironmentSpecularScale
+        end
+
+        Lighting.EnvironmentSpecularScale = 0
+
+    end)
+
+    -- Tắt post effect nặng
+    for _, Object in ipairs(
+        Lighting:GetChildren()
+    ) do
+
+        if Object:IsA("PostEffect") then
+
+            if SavedEffects[Object] == nil then
+
+                SavedEffects[Object] = {
+                    Enabled = Object.Enabled
+                }
+            end
+
+            Object.Enabled = false
+        end
+    end
+
+    -- Tối ưu effect trong Workspace
+    for _, Object in ipairs(
+        Workspace:GetDescendants()
+    ) do
+
+        if Object:IsA("ParticleEmitter") then
+
+            SavedEffects[Object] =
+                SavedEffects[Object] or {}
+
+            if SavedEffects[Object].Enabled == nil then
+                SavedEffects[Object].Enabled =
+                    Object.Enabled
+            end
+
+            if SavedEffects[Object].Rate == nil then
+                SavedEffects[Object].Rate =
+                    Object.Rate
+            end
+
+            Object.Enabled = false
+            Object.Rate = 0
+
+        elseif Object:IsA("Trail")
+            or Object:IsA("Smoke")
+            or Object:IsA("Fire")
+            or Object:IsA("Sparkles") then
+
+            SavedEffects[Object] =
+                SavedEffects[Object] or {}
+
+            if SavedEffects[Object].Enabled == nil then
+                SavedEffects[Object].Enabled =
+                    Object.Enabled
+            end
+
+            Object.Enabled = false
+        end
+    end
+
+    -- Blur 9: chỉ ảnh hưởng phần 3D,
+    -- GUI vẫn rõ để đọc menu/cảnh báo
+    if not BlurEffect then
+
+        BlurEffect =
+            Instance.new("BlurEffect")
+
+        BlurEffect.Name =
+            "TredhuGoldSrcBlur"
+
+        BlurEffect.Size = 9
+        BlurEffect.Parent = Lighting
+    end
+end
+
+local function DisableAntiLag()
+
+    for Object, State in pairs(
+        SavedEffects
+    ) do
+
+        if Object
+            and Object.Parent then
+
+            pcall(function()
+
+                if State.Enabled ~= nil then
+                    Object.Enabled =
+                        State.Enabled
+                end
+
+                if State.Rate ~= nil then
+                    Object.Rate =
+                        State.Rate
+                end
+
+            end)
+        end
+    end
+
+    table.clear(SavedEffects)
+
+    if SavedLighting.GlobalShadows ~= nil then
+
+        Lighting.GlobalShadows =
+            SavedLighting.GlobalShadows
+    end
+
+    pcall(function()
+
+        if SavedLighting.EnvironmentDiffuseScale ~= nil then
+
+            Lighting.EnvironmentDiffuseScale =
+                SavedLighting.EnvironmentDiffuseScale
+        end
+
+        if SavedLighting.Envir
