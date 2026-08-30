@@ -1,0 +1,328 @@
+-- UI-панель без встроенных функций.
+-- Поддерживает:
+-- 1. Перетаскивание основного окна.
+-- 2. Сворачивание в кнопку с символом "π".
+-- 3. Вертикальную прокрутку списка функций.
+-- 4. Динамическое добавление новых функций через AddFunction().
+-- 5. Удаление функций через RemoveFunction().
+-- 6. Автоматическое изменение размера списка.
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local oldGui = playerGui:FindFirstChild("PiFunctionUI")
+if oldGui then
+    oldGui:Destroy()
+end
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "PiFunctionUI"
+gui.ResetOnSpawn = false
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+gui.Parent = playerGui
+
+-- Главный контейнер
+local main = Instance.new("Frame")
+main.Name = "Main"
+main.Size = UDim2.fromOffset(330, 400)
+main.Position = UDim2.new(0.5, -165, 0.5, -200)
+main.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+main.BorderSizePixel = 0
+main.Parent = gui
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 14)
+mainCorner.Parent = main
+
+local stroke = Instance.new("UIStroke")
+stroke.Thickness = 1.5
+stroke.Color = Color3.fromRGB(70, 70, 85)
+stroke.Transparency = 0.15
+stroke.Parent = main
+
+-- Верхняя панель
+local topBar = Instance.new("Frame")
+topBar.Name = "TopBar"
+topBar.Size = UDim2.new(1, 0, 0, 55)
+topBar.BackgroundTransparency = 1
+topBar.Parent = main
+
+local title = Instance.new("TextLabel")
+title.Name = "Title"
+title.Size = UDim2.new(1, -65, 1, 0)
+title.Position = UDim2.fromOffset(18, 0)
+title.BackgroundTransparency = 1
+title.Text = "FUNCTION MENU"
+title.TextColor3 = Color3.fromRGB(245, 245, 250)
+title.TextSize = 18
+title.Font = Enum.Font.GothamBold
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = topBar
+
+-- Кнопка сворачивания
+local collapse = Instance.new("TextButton")
+collapse.Name = "Collapse"
+collapse.Size = UDim2.fromOffset(40, 40)
+collapse.Position = UDim2.new(1, -48, 0, 7)
+collapse.BackgroundColor3 = Color3.fromRGB(35, 35, 43)
+collapse.Text = "−"
+collapse.TextColor3 = Color3.fromRGB(235, 235, 240)
+collapse.TextSize = 22
+collapse.Font = Enum.Font.GothamBold
+collapse.AutoButtonColor = false
+collapse.Parent = topBar
+
+local collapseCorner = Instance.new("UICorner")
+collapseCorner.CornerRadius = UDim.new(0, 10)
+collapseCorner.Parent = collapse
+
+-- Область списка
+local list = Instance.new("ScrollingFrame")
+list.Name = "FunctionList"
+list.Size = UDim2.new(1, -24, 1, -75)
+list.Position = UDim2.fromOffset(12, 65)
+list.BackgroundTransparency = 1
+list.BorderSizePixel = 0
+list.ScrollBarThickness = 4
+list.ScrollBarImageTransparency = 0.25
+list.CanvasSize = UDim2.new(0, 0, 0, 0)
+list.AutomaticCanvasSize = Enum.AutomaticSize.Y
+list.ScrollingDirection = Enum.ScrollingDirection.Y
+list.Parent = main
+
+local layout = Instance.new("UIListLayout")
+layout.Padding = UDim.new(0, 8)
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+layout.Parent = list
+
+local padding = Instance.new("UIPadding")
+padding.PaddingTop = UDim.new(0, 3)
+padding.PaddingBottom = UDim.new(0, 8)
+padding.Parent = list
+
+-- Хранилище добавленных функций
+local functions = {}
+
+-- Создание элемента функции
+local function createFunction(name, callback)
+    local button = Instance.new("TextButton")
+    button.Name = name
+    button.Size = UDim2.new(1, -4, 0, 48)
+    button.BackgroundColor3 = Color3.fromRGB(29, 29, 36)
+    button.BorderSizePixel = 0
+    button.Text = name
+    button.TextColor3 = Color3.fromRGB(230, 230, 235)
+    button.TextSize = 15
+    button.Font = Enum.Font.GothamMedium
+    button.TextXAlignment = Enum.TextXAlignment.Left
+    button.AutoButtonColor = false
+    button.Parent = list
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 10)
+    corner.Parent = button
+
+    local buttonPadding = Instance.new("UIPadding")
+    buttonPadding.PaddingLeft = UDim.new(0, 15)
+    buttonPadding.Parent = button
+
+    local line = Instance.new("Frame")
+    line.Name = "Indicator"
+    line.Size = UDim2.fromOffset(3, 24)
+    line.Position = UDim2.new(1, -8, 0.5, -12)
+    line.BackgroundColor3 = Color3.fromRGB(130, 130, 150)
+    line.BorderSizePixel = 0
+    line.Parent = button
+
+    local lineCorner = Instance.new("UICorner")
+    lineCorner.CornerRadius = UDim.new(1, 0)
+    lineCorner.Parent = line
+
+    button.MouseEnter:Connect(function()
+        button.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+    end)
+
+    button.MouseLeave:Connect(function()
+        button.BackgroundColor3 = Color3.fromRGB(29, 29, 36)
+    end)
+
+    button.MouseButton1Click:Connect(function()
+        if typeof(callback) == "function" then
+            callback()
+        end
+    end)
+
+    return button
+end
+
+-- Добавление функции
+function AddFunction(name, callback)
+    if not name then
+        return
+    end
+
+    if functions[name] then
+        functions[name]:Destroy()
+        functions[name] = nil
+    end
+
+    functions[name] = createFunction(name, callback)
+end
+
+-- Удаление функции
+function RemoveFunction(name)
+    if functions[name] then
+        functions[name]:Destroy()
+        functions[name] = nil
+    end
+end
+
+-- Полная очистка функций
+function ClearFunctions()
+    for name, object in pairs(functions) do
+        if object then
+            object:Destroy()
+        end
+        functions[name] = nil
+    end
+end
+
+-- Перетаскивание меню
+local dragging = false
+local dragStart
+local startPosition
+
+topBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+
+        dragging = true
+        dragStart = input.Position
+        startPosition = main.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if not dragging then
+        return
+    end
+
+    if input.UserInputType ~= Enum.UserInputType.MouseMovement
+        and input.UserInputType ~= Enum.UserInputType.Touch then
+        return
+    end
+
+    local delta = input.Position - dragStart
+
+    main.Position = UDim2.new(
+        startPosition.X.Scale,
+        startPosition.X.Offset + delta.X,
+        startPosition.Y.Scale,
+        startPosition.Y.Offset + delta.Y
+    )
+end)
+
+-- Кнопка π после сворачивания
+local piButton = Instance.new("TextButton")
+piButton.Name = "PiButton"
+piButton.Size = UDim2.fromOffset(52, 52)
+piButton.Position = main.Position
+piButton.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+piButton.BorderSizePixel = 0
+piButton.Text = "π"
+piButton.TextColor3 = Color3.fromRGB(245, 245, 250)
+piButton.TextSize = 25
+piButton.Font = Enum.Font.GothamBold
+piButton.Visible = false
+piButton.AutoButtonColor = false
+piButton.Parent = gui
+
+local piCorner = Instance.new("UICorner")
+piCorner.CornerRadius = UDim.new(0, 14)
+piCorner.Parent = piButton
+
+local piStroke = Instance.new("UIStroke")
+piStroke.Thickness = 1.5
+piStroke.Color = Color3.fromRGB(70, 70, 85)
+piStroke.Parent = piButton
+
+-- Сворачивание
+collapse.MouseButton1Click:Connect(function()
+    piButton.Position = main.Position
+    main.Visible = false
+    piButton.Visible = true
+end)
+
+-- Разворачивание
+piButton.MouseButton1Click:Connect(function()
+    main.Position = piButton.Position
+    piButton.Visible = false
+    main.Visible = true
+end)
+
+-- Перетаскивание π-кнопки
+local piDragging = false
+local piDragStart
+local piStartPosition
+
+piButton.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+
+        piDragging = true
+        piDragStart = input.Position
+        piStartPosition = piButton.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                piDragging = false
+            end
+        end)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if not piDragging then
+        return
+    end
+
+    if input.UserInputType ~= Enum.UserInputType.MouseMovement
+        and input.UserInputType ~= Enum.UserInputType.Touch then
+        return
+    end
+
+    local delta = input.Position - piDragStart
+
+    piButton.Position = UDim2.new(
+        piStartPosition.X.Scale,
+        piStartPosition.X.Offset + delta.X,
+        piStartPosition.Y.Scale,
+        piStartPosition.Y.Offset + delta.Y
+    )
+end
+
+-- API интерфейса:
+-- AddFunction("Название", function()
+--     -- Здесь будет код функции.
+-- end)
+--
+-- RemoveFunction("Название")
+-- ClearFunctions()
+
+return {
+    AddFunction = AddFunction,
+    RemoveFunction = RemoveFunction,
+    ClearFunctions = ClearFunctions,
+    Main = main,
+    List = list,
+    PiButton = piButton
+}
