@@ -1,0 +1,214 @@
+from flask import Flask, request, jsonify
+import re
+import os
+
+app = Flask(__name__)
+
+# ==============================
+# DATABASE ĐỘNG
+# ==============================
+
+WORDS = set()
+
+
+def normalize(text):
+    text = str(text).lower().strip()
+    text = re.sub(r"\s+", " ", text)
+    return text
+
+
+def load_database():
+    global WORDS
+
+    WORDS.clear()
+
+    if not os.path.exists("words.txt"):
+        return
+
+    with open("words.txt", "r", encoding="utf-8") as f:
+        for line in f:
+            line = normalize(line)
+
+            if line:
+                WORDS.add(line)
+
+
+load_database()
+
+
+# ==============================
+# KIỂM TRA CỤM TỪ
+# ==============================
+
+@app.get("/check")
+def check():
+
+    current = normalize(
+        request.args.get("current", "")
+    )
+
+    answer = normalize(
+        request.args.get("answer", "")
+    )
+
+    if not current or not answer:
+        return jsonify({
+            "ok": False,
+            "valid": False,
+            "error": "missing current or answer"
+        }), 400
+
+    current_words = current.split()
+    answer_words = answer.split()
+
+    if not current_words or not answer_words:
+        return jsonify({
+            "ok": True,
+            "valid": False
+        })
+
+    required_word = current_words[-1]
+    answer_first_word = answer_words[0]
+
+    # Phải nối đúng từ cuối
+    connected = (
+        answer_first_word == required_word
+    )
+
+    # Phải tồn tại trong database
+    exists = answer in WORDS
+
+    valid = connected and exists
+
+    return jsonify({
+        "ok": True,
+        "valid": valid,
+        "current": current,
+        "answer": answer,
+        "required": required_word,
+        "connected": connected,
+        "exists": exists
+    })
+
+
+# ==============================
+# TÌM TỪ TIẾP THEO
+# ==============================
+
+@app.get("/next")
+def next_word():
+
+    current = normalize(
+        request.args.get("current", "")
+    )
+
+    if not current:
+        return jsonify({
+            "ok": False,
+            "error": "missing current"
+        }), 400
+
+    required = current.split()[-1]
+
+    results = []
+
+    for phrase in WORDS:
+
+        if phrase.split()[0] == required:
+            results.append(phrase)
+
+    return jsonify({
+        "ok": True,
+        "required": required,
+        "count": len(results),
+        "results": results
+    })
+
+
+# ==============================
+# THÊM TỪ MỚI
+# ==============================
+
+@app.post("/add")
+def add_word():
+
+    data = request.get_json(silent=True)
+
+    if not data:
+        return jsonify({
+            "ok": False,
+            "error": "invalid json"
+        }), 400
+
+    word = normalize(
+        data.get("word", "")
+    )
+
+    if not word:
+        return jsonify({
+            "ok": False,
+            "error": "missing word"
+        }), 400
+
+    WORDS.add(word)
+
+    with open("words.txt", "a", encoding="utf-8") as f:
+        f.write(word + "\n")
+
+    return jsonify({
+        "ok": True,
+        "added": word
+    })
+
+
+# ==============================
+# LOAD LẠI DATABASE
+# ==============================
+
+@app.get("/reload")
+def reload():
+
+    load_database()
+
+    return jsonify({
+        "ok": True,
+        "count": len(WORDS)
+    })
+
+
+# ==============================
+# THỐNG KÊ
+# ==============================
+
+@app.get("/stats")
+def stats():
+
+    return jsonify({
+        "ok": True,
+        "count": len(WORDS)
+    })
+
+
+# ==============================
+# HEALTH CHECK
+# ==============================
+
+@app.get("/health")
+def health():
+
+    return jsonify({
+        "ok": True,
+        "status": "online"
+    })
+
+
+# ==============================
+# START SERVER
+# ==============================
+
+if __name__ == "__main__":
+
+    app.run(
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", 5000))
+    )
